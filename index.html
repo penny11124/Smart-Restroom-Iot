@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧廁所管理儀表板</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        
+        /* 卡片佈局 */
+        #dashboard-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 代表「一間廁所」的卡片 */
+        .stall-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+            width: 280px;
+            overflow: hidden; /* 確保狀態列貼齊頂部 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stall-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 卡片頂部的「狀態列」 */
+        .stall-status {
+            padding: 16px 20px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            color: #fff;
+            transition: background-color 0.3s ease;
+        }
+
+        /* === 核心狀態顏色 === */
+        /* 閒置 (綠色) */
+        .stall-card.idle .stall-status {
+            background-color: #28a745; /* 綠色 */
+        }
+        /* 使用中 (藍色) */
+        .stall-card.in-use .stall-status {
+            background-color: #007bff; /* 藍色 */
+        }
+        /* 節能模式 (黃色) */
+        .stall-card.eco-mode .stall-status {
+            background-color: #fdc107; /* 黃色 */
+            color: #333;
+        }
+        /* 錯誤 (紅色) */
+        .stall-card.error .stall-status {
+            background-color: #dc3545; /* 紅色 */
+        }
+
+        /* 卡片內部的「感測器數據」 */
+        .stall-content {
+            padding: 20px;
+        }
+        .stall-content h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            text-align: center;
+            color: #333;
+        }
+        .sensor-data {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sensor-data li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1rem;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .sensor-data li:last-child {
+            border-bottom: none;
+        }
+        .sensor-data li strong {
+            color: #555;
+        }
+        .sensor-data li span {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #333;
+            background-color: #f4f7f6;
+            padding: 4px 10px;
+            border-radius: 5px;
+        }
+
+        /* 空氣品質狀態 */
+        .sensor-data li span.good { color: #28a745; }
+        .sensor-data li span.moderate { color: #fdc107; }
+        .sensor-data li span.bad { color: #dc3545; }
+
+    </style>
+</head>
+<body>
+
+    <h2>智慧廁所管理儀表板</h2>
+    
+    <div id="dashboard-container">
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
