@@ -120,8 +120,7 @@ app.get('/api/sensor-data', async (req, res) => {
         const latestValue = parseFloat(latestDataPoint.value); // 確保是數字
 
         // 根據感測器類型 (type) 決定回傳的物件
-        // **注意**: "pressure", "tvoc" 這些 type 字串要跟你後台 API 的一樣
-        if (type.includes('LIGHT_INTENSITY') || type.includes('BATTERY_VOLTAGE')) {
+        if (type.includes('WEIGHT_SCALE') || type.includes('BATTERY_VOLTAGE') || type.includes('ELECTRIC_CURRENT')) {
             // --- 這是壓力感測器的邏輯 ---
             const PRESSURE_THRESHOLD = 5; // 假設大於 5kg 算有人
             const ECO_MODE_TIME = 5 * 60 * 1000; // 假設 1 分鐘
@@ -166,19 +165,18 @@ app.get('/api/sensor-data', async (req, res) => {
                 }
             }
 
-        } else if (type.includes('tvoc')) {
-            // --- 這是 TVOC 的邏輯 ---
+        } else if (type.includes('AIR_PRESS')) {
+            // --- 這是 eCO2 的邏輯 ---
             let status = "good";
             if (latestValue > 600) status = "bad"; // 假設 > 600 ppb 算差
             else if (latestValue > 200) status = "moderate"; // 假設 > 200 ppb 算中等
 
             return res.status(200).json({
                 status: status,
-                displayValue: `${latestValue.toFixed(0)} ppb`
+                displayValue: `${latestValue.toFixed(0)} ppm`
             });
         
         } else {
-            // --- 其他感測器 (照常顯示) ---
             return res.status(200).json({
                 status: "unknown",
                 displayValue: latestValue
@@ -191,6 +189,36 @@ app.get('/api/sensor-data', async (req, res) => {
     }
 });
 
+// --- API 路由 3: 取得過去 24 小時的歷史資料 ---
+app.get('/api/sensor-history', async (req, res) => {
+    const { type, id } = req.query;
+    
+    if (!type || !id) return res.status(400).json({ message: '缺少參數' });
+
+    try {
+        const token = await getAuthToken();
+        
+        const endTimestamp = Date.now();
+        const startTimestamp = endTimestamp - (24 * 60 * 60 * 1000); // 24 小時前
+
+        // 呼叫外部 API
+        const sensorApiUrl = `${SENSOR_DATA_API_URL}/${type}/${id}/${startTimestamp}/${endTimestamp}`;
+        
+        const response = await fetch(sensorApiUrl, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        // 直接把整包歷史資料回傳給前端去運算
+        res.status(200).json(data);
+
+    } catch (error) {
+        console.error('取得歷史資料失敗:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // --- 啟動伺服器 ---
 app.listen(PORT, () => {
