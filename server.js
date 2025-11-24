@@ -46,7 +46,7 @@ async function getAuthToken() {
     return loginData.token;
 }
 
-// --- API 路由 1: 取得「感測器群組清單」 ---
+// --- API 路由 1: 取得感測器群組清單 ---
 // 前端呼叫: http://localhost:3000/api/sensorGroup
 app.get('/api/sensorGroup', async (req, res) => {
     console.log('收到 /api/sensorGroup 請求 (取得感測器清單)...');
@@ -76,7 +76,7 @@ app.get('/api/sensorGroup', async (req, res) => {
 });
 
 
-// --- API 路由 2: 取得「單一感測器的最新讀值」 (新功能) ---
+// --- API 路由 2: 取得單一感測器的最新讀值 (新功能) ---
 app.get('/api/sensor-data', async (req, res) => {
     
     const { type, id } = req.query;
@@ -92,8 +92,8 @@ app.get('/api/sensor-data', async (req, res) => {
         
         // 抓取過去 10 分鐘的資料 (跟之前一樣)
         const endTimestamp = Date.now();
-        // 重要：為了判斷節能模式，我們需要更長的歷史資料，例如 15 分鐘
-        const ecoModeCheckDuration = 15 * 60 * 1000; // 15 分鐘
+        // 重要：為了判斷節能模式，我們需要更長的歷史資料，例如 15分鐘
+        const ecoModeCheckDuration = 15 * 60 * 1000; // 15分鐘
         const startTimestamp = endTimestamp - ecoModeCheckDuration; 
 
         const sensorApiUrl = `${SENSOR_DATA_API_URL}/${type}/${id}/${startTimestamp}/${endTimestamp}`;
@@ -123,7 +123,7 @@ app.get('/api/sensor-data', async (req, res) => {
         if (type.includes('WEIGHT_SCALE') || type.includes('BATTERY_VOLTAGE') || type.includes('ELECTRIC_CURRENT')) {
             // --- 這是壓力感測器的邏輯 ---
             const PRESSURE_THRESHOLD = 5; // 假設大於 5kg 算有人
-            const ECO_MODE_TIME = 5 * 60 * 1000; // 假設 1 分鐘
+            const ECO_MODE_TIME = 5 * 60 * 1000; // 假設5分鐘
 
             if (latestValue < PRESSURE_THRESHOLD) {
                 // 1. 狀態：閒置
@@ -132,18 +132,18 @@ app.get('/api/sensor-data', async (req, res) => {
                     displayValue: `${latestValue.toFixed(1)} kg`
                 });
             } else {
-                // 2. 狀態：有人，需判斷是「使用中」還是「節能模式」
+                // 2. 狀態：有人，需判斷是使用中還是節能模式
                 
-                // 找出這段「有人」狀態是從什麼時候開始的
+                // 找出這段有人狀態是從什麼時候開始的
                 let sessionStartTime = latestDataPoint.timestamp;
                 // 從倒數第二筆資料開始往前看
                 for (let i = sensorData.Items.length - 2; i >= 0; i--) {
                     const item = sensorData.Items[i];
                     if (parseFloat(item.value) >= PRESSURE_THRESHOLD) {
-                        // 如果還是 "有人"，就更新開始時間
+                        // 如果還是有人，就更新開始時間
                         sessionStartTime = item.timestamp;
                     } else {
-                        // 一旦發現 "沒人" 的資料，就表示找到起點了，跳出迴圈
+                        // 一旦發現沒人的資料，就表示找到起點了，跳出迴圈
                         break;
                     }
                 }
@@ -168,7 +168,7 @@ app.get('/api/sensor-data', async (req, res) => {
         } else if (type.includes('AIR_PRESS')) {
             // --- 這是 eCO2 的邏輯 ---
             let status = "good";
-            if (latestValue > 600) status = "bad"; // 假設 > 600 ppb 算差
+            if (latestValue > 1000) status = "bad"; // 假設 > 600 ppb 算差
             else if (latestValue > 200) status = "moderate"; // 假設 > 200 ppb 算中等
 
             return res.status(200).json({
