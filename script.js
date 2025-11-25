@@ -56,16 +56,16 @@ async function updateDashboard() {
 }
 
 /**
- * 輔助函式：取得「單一隔間」的所有資料，並回傳 HTML 字串
+ * 輔助函式：取得單一隔間的所有資料，並回傳HTML字串
  * @param {object} stallConfig - 單一隔間的設定物件
- * @returns {Promise<string>} - 組合好的 HTML 卡片字串
+ * @returns {Promise<string>} - 組合好的HTML卡片字串
  */
 async function fetchStallData(stallConfig) {
     try {
-        // 1. 取得壓力感測器「狀態」
+        // 1. 取得壓力感測器狀態
         const pressureData = await fetchSensorData(stallConfig.pressureSensor.type, stallConfig.pressureSensor.id);
 
-        // 2. 取得 eCO2 感測器「狀態」
+        // 2. 取得eCO2感測器狀態
         const airSensorsPromises = stallConfig.airSensors.map(sensor => 
             fetchSensorData(sensor.type, sensor.id).then(data => ({
                 name: sensor.name, 
@@ -74,7 +74,7 @@ async function fetchStallData(stallConfig) {
         );
         const airSensorsData = await Promise.all(airSensorsPromises);
 
-        // 3. 組合 HTML
+        // 3. 組合HTML
         return generateStallCardHtml(stallConfig.name, pressureData, airSensorsData);
 
     } catch (error) {
@@ -92,7 +92,7 @@ async function fetchStallData(stallConfig) {
 }
 
 /**
- * 輔助函式：呼叫後端 API 取得單一感測器的狀態
+ * 輔助函式：呼叫後端API取得單一感測器的狀態
  * @param {string} type - 感測器類型
  * @param {string} id - 感測器 ID
  * @returns {Promise<object>} - 包含狀態和顯示數值的物件 (例如: { status: "idle", displayValue: "0.5 kg" })
@@ -117,15 +117,15 @@ async function fetchSensorData(type, id) {
 
 
 /**
- * 輔助函式：產生單張卡片的 HTML
+ * 輔助函式：產生單張卡片的HTML
  * @param {string} name - 隔間名稱
  * @param {object} pressureData - 壓力感測器狀態物件
  * @param {Array<object>} airSensorsData - 空氣感測器狀態物件陣列
- * @returns {string} - HTML 字串
+ * @returns {string} - HTML字串
  */
 function generateStallCardHtml(name, pressureData, airSensorsData) {
     
-    // 決定卡片的 CSS class (idle, in-use, eco-mode, error)
+    // 決定卡片的CSS class (idle, in-use, eco-mode, error)
     const cardStatusClass = pressureData.status || 'error';
     
     // 決定顯示的狀態文字
@@ -142,7 +142,7 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
             break;
     }
 
-    // 產生 eCO2 的 HTML
+    // 產生eCO2的HTML
     const airSensorsHtml = airSensorsData.map(sensor => `
         <li>
             <strong>${sensor.name}</strong>
@@ -150,7 +150,7 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
         </li>
     `).join('');
 
-    // 組合完整的卡片 HTML
+    // 組合完整的卡片HTML
     return `
         <div class="stall-card ${cardStatusClass}" onclick="openModal('${name}')">
             <div class="stall-status">${statusText}</div>
@@ -176,7 +176,6 @@ async function openModal(stallName) {
     const model = document.getElementById('detail-modal');
     const title = document.getElementById('modal-title');
 
-    // 顯示 Loading 狀態
     model.style.display = 'flex';
     title.innerText = `${stallName} - 數據詳情`;
     document.getElementById('stat-count').innerText = '-';
@@ -195,7 +194,7 @@ async function openModal(stallName) {
         
         if (!data.Items) throw new Error("無數據");
 
-        // 3. 進行數據分析 (演算法)
+        // 3. 進行數據分析
         const analysis = analyzeUsage(data.Items);
 
         // 4. 更新畫面上數字

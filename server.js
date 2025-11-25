@@ -7,14 +7,14 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-// --- API 基礎設定 (機敏資料) ---
+// --- API 基礎設定 ---
 const API_BASE_URL = 'https://edu.nthu-smart-farming.kits.tw/api/api';
 const LOGIN_API = `${API_BASE_URL}/account/login`;
 
-// API 1: 取得「感測器清單」
+// API 1: 取得感測器清單
 const SENSOR_GROUP_API_URL = `${API_BASE_URL}/sensors_in_group/6b3359aa-c2ee-4f69-afa9-11a679f951b1`;
 
-// API 2: 取得「單一感測器的歷史區間資料」
+// API 2: 取得單一感測器的歷史區間資料
 // 格式: /sensors_in_timeinterval/{sensorType}/{sensorId}/{start}/{end}
 const SENSOR_DATA_API_URL = `${API_BASE_URL}/sensors_in_timeinterval`;
 
