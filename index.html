@@ -18,7 +18,7 @@
             position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
             background-color: #28a745; color: white; border: none; padding: 10px 20px;
             border-radius: 8px; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: 0.3s; display: flex; align-items: center; gap: 8px;
+            transition: background 0.3s; display: flex; align-items: center; gap: 8px;
         }
         .esg-btn:hover { background-color: #218838; }
 
@@ -37,7 +37,6 @@
         .stall-content { padding: 20px; }
         .stall-content h3 { margin: 0 0 15px 0; font-size: 1.5rem; text-align: center; color: #333; }
         
-        /* 感測數據列表 */
         .sensor-data { list-style: none; padding: 0; margin: 0; }
         .sensor-data li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
         .sensor-data li:last-child { border-bottom: none; }
@@ -48,23 +47,35 @@
         .modal-content { background-color: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 900px; position: relative; max-height: 90vh; overflow-y: auto; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #aaa; }
         
-        /* 統計區塊 */
         .stats-row { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
         .stat-box { text-align: center; background: #f8f9fa; padding: 15px; border-radius: 10px; flex: 1; min-width: 120px; }
         .stat-val { font-size: 1.5rem; font-weight: bold; color: #007bff; }
         .stat-label { font-size: 0.9rem; color: #666; margin-top: 5px; }
         
-        /* ESG 專用 */
         .stat-box.esg { background: #e8f5e9; border: 1px solid #c3e6cb; }
         .stat-box.esg .stat-val { color: #28a745; }
         
-        /* 清潔 專用 */
         .stat-box.cleaning { background: #fff3cd; border: 1px solid #ffeeba; }
         .stat-box.cleaning .stat-val { color: #856404; }
 
-        /* 進度條 */
         .progress-container { width: 100%; background-color: #e9ecef; border-radius: 5px; margin-top: 5px; height: 10px; overflow: hidden; }
         .progress-bar { height: 100%; background-color: #28a745; width: 0%; transition: width 0.5s, background-color 0.5s; }
+
+        /* AI 洞察區塊 */
+        .ai-insight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .ai-icon { font-size: 2rem; }
+        .ai-text h4 { margin: 0 0 5px 0; font-size: 1.1rem; }
+        .ai-text p { margin: 0; font-size: 0.95rem; opacity: 0.9; }
 
         .chart-container-box { position: relative; height: 400px; width: 100%; margin-top: 20px; }
     </style>
@@ -78,18 +89,25 @@
     
     <div id="dashboard-container"></div>
 
-    <!-- 隔間分析與智慧清潔 Modal -->
+    <!-- 1. 隔間分析與智慧清潔 Modal -->
     <div id="detail-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('detail-modal')">&times;</span>
             <h2 id="modal-title">隔間數據分析</h2>
             
+            <div class="ai-insight-box">
+                <div class="ai-icon">🤖</div>
+                <div class="ai-text">
+                    <h4>AI 預測建議</h4>
+                    <p id="ai-suggestion-text">分析歷史數據中...</p>
+                </div>
+            </div>
+
             <div class="stats-row">
                 <div class="stat-box">
                     <div class="stat-val" id="stat-count">-</div>
                     <div class="stat-label">今日使用人次</div>
                 </div>
-                <!-- 智慧清潔指標 -->
                 <div class="stat-box cleaning">
                     <div class="stat-val" id="stat-clean-status">良好</div>
                     <div class="stat-label">清潔狀態</div>
@@ -100,7 +118,6 @@
                         髒亂度: <span id="clean-percent">0</span>%
                     </div>
                 </div>
-                <!-- 尖峰時段分析 -->
                 <div class="stat-box">
                     <div class="stat-val" id="stat-peak-hour" style="font-size: 1.2rem; line-height: 1.5rem;">分析中</div>
                     <div class="stat-label">今日尖峰時段</div>
@@ -113,7 +130,7 @@
         </div>
     </div>
 
-    <!-- ESG 報表 Modal -->
+    <!-- 2. ESG 報表 Modal -->
     <div id="energy-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('energy-modal')">&times;</span>

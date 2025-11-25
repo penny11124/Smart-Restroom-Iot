@@ -18,6 +18,7 @@ const SENSOR_DATA_API_URL = `${API_BASE_URL}/sensors_in_timeinterval`;
 const USER_ACCOUNT = '2025-competition-team10';
 const USER_PASSWORD = '94964689';
 
+
 // --- 中介軟體 (Middleware) ---
 app.use(cors());
 app.use(express.static(__dirname));
@@ -152,7 +153,7 @@ app.get('/api/sensor-data', async (req, res) => {
     }
 });
 
-// --- API 路由 3: 取得過去 24 小時的歷史資料 ---
+// --- API 路由 2: 取得過去 24 小時的歷史資料 ---
 app.get('/api/sensor-history', async (req, res) => {
     const { type, id } = req.query;
     
@@ -178,6 +179,30 @@ app.get('/api/sensor-history', async (req, res) => {
 
     } catch (error) {
         console.error('取得歷史資料失敗:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- API 3: 48小時歷史資料 ---
+app.get('/api/sensor-history-48h', async (req, res) => {
+    const { type, id } = req.query;
+    if (!type || !id) return res.status(400).json({ message: '缺少參數' });
+
+    try {
+        const token = await getAuthToken();
+        const endTimestamp = Date.now();
+        const startTimestamp = endTimestamp - (48 * 60 * 60 * 1000); // 48小時 (2天)
+
+        const sensorApiUrl = `${SENSOR_DATA_API_URL}/${type}/${id}/${startTimestamp}/${endTimestamp}`;
+        const response = await fetch(sensorApiUrl, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('取得48H歷史資料失敗:', error);
         res.status(500).json({ error: error.message });
     }
 });
