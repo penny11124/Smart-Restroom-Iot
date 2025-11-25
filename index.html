@@ -11,11 +11,51 @@
             margin: 20px;
             background-color: #f4f7f6;
         }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
         
+        /* --- 修改區塊開始：標題與按鈕佈局 --- */
+        .header-container {
+            position: relative;       /* 關鍵：設定為絕對定位的參考點 */
+            display: flex;
+            justify-content: center;  /* 關鍵：讓內部的 h2 標題水平置中 */
+            align-items: center;
+            
+            width: 100%;              /* 佔滿寬度 */
+            max-width: 1200px;        /* 設定一個最大寬度，避免在超大螢幕太分散 */
+            margin: 0 auto 20px auto; /* 容器本身在畫面中置中 */
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+
+        h2 { 
+            margin: 0; 
+            color: #333; 
+            font-size: 1.8rem;
+        }
+
+        /* 節能報表按鈕 */
+        .esg-btn {
+            position: absolute;       /* 關鍵：使用絕對定位 */
+            right: 20px;              /* 關鍵：固定在容器的右側 */
+            top: 50%;                 /* 垂直置中技巧 1 */
+            transform: translateY(-50%); /* 垂直置中技巧 2 */
+            
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* --- 修改區塊結束 --- */
+
+        .esg-btn:hover { background-color: #218838; }
+
         /* 卡片佈局 */
         #dashboard-container {
             display: flex;
@@ -25,166 +65,141 @@
             padding: 20px;
         }
 
-        /* 代表「一間廁所」的卡片 */
+        /* 廁所卡片 */
         .stall-card {
             background-color: #ffffff;
             border-radius: 12px;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
             width: 280px;
-            overflow: hidden; /* 確保狀態列貼齊頂部 */
+            overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .stall-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
+        .stall-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); }
 
-        /* 卡片頂部的「狀態列」 */
         .stall-status {
             padding: 16px 20px;
             font-size: 1.4rem;
             font-weight: 700;
             text-align: center;
             color: #fff;
-            transition: background-color 0.3s ease;
         }
+        .stall-card.idle .stall-status { background-color: #28a745; }
+        .stall-card.in-use .stall-status { background-color: #007bff; }
+        .stall-card.eco-mode .stall-status { background-color: #fdc107; color: #333; }
+        .stall-card.error .stall-status { background-color: #dc3545; }
 
-        /* === 核心狀態顏色 === */
-        /* 閒置 (綠色) */
-        .stall-card.idle .stall-status {
-            background-color: #28a745; /* 綠色 */
-        }
-        /* 使用中 (藍色) */
-        .stall-card.in-use .stall-status {
-            background-color: #007bff; /* 藍色 */
-        }
-        /* 節能模式 (黃色) */
-        .stall-card.eco-mode .stall-status {
-            background-color: #fdc107; /* 黃色 */
-            color: #333;
-        }
-        /* 錯誤 (紅色) */
-        .stall-card.error .stall-status {
-            background-color: #dc3545; /* 紅色 */
-        }
-
-        /* 卡片內部的「感測器數據」 */
-        .stall-content {
-            padding: 20px;
-        }
-        .stall-content h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-            text-align: center;
-            color: #333;
-        }
-        .sensor-data {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        .stall-content { padding: 20px; }
+        .stall-content h3 { margin: 0 0 15px 0; font-size: 1.5rem; text-align: center; color: #333; }
+        .sensor-data { list-style: none; padding: 0; margin: 0; }
         .sensor-data li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1rem;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f0f0f0;
         }
-        .sensor-data li:last-child {
-            border-bottom: none;
-        }
-        .sensor-data li strong {
-            color: #555;
-        }
+        .sensor-data li:last-child { border-bottom: none; }
         .sensor-data li span {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: #333;
-            background-color: #f4f7f6;
-            padding: 4px 10px;
-            border-radius: 5px;
+            font-weight: 600; color: #333; background: #f4f7f6; padding: 4px 10px; border-radius: 5px;
         }
-
-        /* 空氣品質狀態 */
-        .sensor-data li span.good { color: #28a745; }
-        .sensor-data li span.moderate { color: #fdc107; }
         .sensor-data li span.bad { color: #dc3545; }
-        
-        /* 2. 新增：彈出視窗 (Modal) 的樣式 */
+        .sensor-data li span.moderate { color: #fdc107; }
+
+        /* 彈出視窗樣式 */
         .modal {
-            display: none; /* 預設隱藏 */
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5); /* 半透明黑色背景 */
-            justify-content: center;
-            align-items: center;
+            display: none;
+            position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center; align-items: center;
         }
         .modal-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 600px;
-            position: relative;
+            background-color: white; padding: 25px; border-radius: 15px;
+            width: 90%; max-width: 900px;
+            position: relative; max-height: 90vh; overflow-y: auto;
         }
         .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #aaa;
+            position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #aaa;
         }
         .close-btn:hover { color: black; }
-        
-        /* 統計數據的小方塊 */
-        .stats-row {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
+
+        /* 圖表容器 */
+        .chart-container-box {
+            position: relative; height: 400px; width: 100%; margin-top: 20px;
         }
+
+        /* 統計數據區塊 */
+        .stats-row { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 10px; }
         .stat-box {
-            text-align: center;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            width: 45%;
+            text-align: center; background: #f8f9fa; padding: 15px;
+            border-radius: 10px; flex: 1;
         }
-        .stat-val { font-size: 1.5rem; font-weight: bold; color: #007bff; }
-        .stat-label { font-size: 0.9rem; color: #666; }
+        /* 特別給 ESG 的樣式 */
+        .stat-box.esg { background: #e8f5e9; border: 1px solid #c3e6cb; }
+        .stat-val { font-size: 1.8rem; font-weight: bold; color: #007bff; }
+        .stat-box.esg .stat-val { color: #28a745; } /* 綠色字 */
+        .stat-label { font-size: 0.9rem; color: #666; margin-top: 5px; }
+        .stat-unit { font-size: 0.8rem; color: #888; }
     </style>
 </head>
 <body>
 
-    <h2>智慧廁所管理儀表板</h2>
+    <div class="header-container">
+        <h2>智慧廁所管理儀表板</h2>
+        <!-- 新增：節能報表按鈕 -->
+        <button class="esg-btn" onclick="openEnergyReport()">
+            🌱 節能成效報表
+        </button>
+    </div>
     
     <div id="dashboard-container"></div>
+
+    <!-- 1. 既有的：隔間詳細數據 Modal -->
     <div id="detail-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <span class="close-btn" onclick="closeModal('detail-modal')">&times;</span>
             <h2 id="modal-title">隔間數據分析</h2>
-            
             <div class="stats-row">
                 <div class="stat-box">
-                    <div class="stat-val" id="stat-count">計算中...</div>
+                    <div class="stat-val" id="stat-count">-</div>
                     <div class="stat-label">今日使用次數</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-val" id="stat-avg-time">計算中...</div>
+                    <div class="stat-val" id="stat-avg">-</div>
                     <div class="stat-label">平均使用時間 (分)</div>
                 </div>
             </div>
-
-            <canvas id="usageChart"></canvas>
+            <div class="chart-container-box">
+                <canvas id="usageChart"></canvas>
+            </div>
         </div>
     </div>
-    
+
+    <!-- 2. 新增：節能成效報表 Modal -->
+    <div id="energy-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('energy-modal')">&times;</span>
+            <h2 style="color: #28a745;">🌱 ESG 節能成效報告</h2>
+            <p style="text-align:center; color:#666;">比較基準：傳統廁所設備 24H 全開 vs. 智慧節能系統</p>
+            
+            <div class="stats-row">
+                <div class="stat-box esg">
+                    <div class="stat-val" id="esg-kwh">-</div>
+                    <div class="stat-label">節省電力 <span class="stat-unit">(kWh)</span></div>
+                </div>
+                <div class="stat-box esg">
+                    <div class="stat-val" id="esg-carbon">-</div>
+                    <div class="stat-label">減少碳排 <span class="stat-unit">(kgCO2e)</span></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" id="esg-rate">-</div>
+                    <div class="stat-label">節能率 <span class="stat-unit">(%)</span></div>
+                </div>
+            </div>
+
+            <div class="chart-container-box">
+                <canvas id="energyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
