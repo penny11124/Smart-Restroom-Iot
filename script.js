@@ -341,12 +341,11 @@ function renderChart(hourlyData, predictedData) {
                     label: '今日實際人流',
                     data: hourlyData,
                     borderColor: '#007bff', borderWidth: 3, backgroundColor: gradient, fill: true, tension: 0.4,
-                    // spanGaps: false 確保 null 值會斷開線條
                     spanGaps: false, 
                     pointRadius: 0, pointHoverRadius: 6, pointBackgroundColor: '#fff', pointBorderColor: '#007bff'
                 },
                 {
-                    label: 'AI 預測明日人流',
+                    label: 'AI預測明日人流',
                     data: predictedData,
                     borderColor: '#6f42c1', borderWidth: 2, borderDash: [5, 5], fill: false, tension: 0.4, pointRadius: 0
                 }
