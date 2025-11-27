@@ -7,15 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDashboard, 5000); 
 });
 
+const TRADITIONAL_BASELINE_MWH_PER_MIN = 1200;
+
 const STALLS_CONFIG = [
     {
         name: "隔間 1",
         pressureSensor: { type: "WEIGHT_SCALE", id: "2e2c7411-5498-468c-ad7f-7e1df8a08121" },
         airSensors: [{ name: "eCO2", type: "AIR_PRESS", id: "1d3a465b-d312-4f12-b24a-d818676bd6ca" }],
-        powerConfig: {
-            voltage: { type: "BATTERY_VOLTAGE", id: "ec90c93e-c304-436f-aa6c-1f4a9739f78b" }, 
-            current: { type: "ELECTRIC_CURRENT", id: "1c788f5f-0e3e-4297-84cd-a66b7d3d9562" }
-        }
+        powerConsumption: { type: "ELECTRICAL_CONSUMPTION", id: "8ca87a58-f643-4af0-afc6-3e52940750f4" }
     }
     // 在此新增更多隔間配置
 ];
@@ -142,7 +141,7 @@ function resetCleaningStatus() {
     openModal(currentStallName);
 }
 
-// 計算自上次清潔後的使用量 ★★★
+// 計算自上次清潔後的使用量
 function calculateUsageSinceClean(stallName, items) {
     const lastCleanTime = localStorage.getItem(`last_clean_time_${stallName}`) || 0;
     let count = 0;
@@ -257,7 +256,7 @@ function generateAdvancedAIInsight(count, peakHourStr, todayCounts, predictedCou
     const predictedTotal = predictedCounts.reduce((a,b) => a+b, 0);
     const trend = predictedTotal > count ? "上升 📈" : "下降 📉";
     
-    let msg = `📊 模型預測明日人流將${trend} (約${Math.round(predictedTotal)}人次)。`;
+    let msg = `📊模型預測明日人流將${trend} (約${Math.round(predictedTotal)}人次)。`;
 
     // 判斷是否為週末模式 (假設上週數據顯示差異)
     // 這裡可以寫死一個邏輯：如果今天是週五，提示明天(週六)可能變少(商辦)或變多(景點)
@@ -282,42 +281,53 @@ async function openEnergyReport() {
     document.getElementById('esg-rate').innerText = '-';
 
     try {
-        let totalSmartKwh = 0;      
-        let totalTraditionalKwh = 0;
-        const CO2_FACTOR = 0.495;   
+        let totalSmartMWh = 0;
+        let totalTraditionalMWh = 0;
+        const CO2_FACTOR = 0.495; // kgCO2e / kWh
 
         for (const stall of STALLS_CONFIG) {
-            const [voltageRes, currentRes] = await Promise.all([
-                fetch(`/api/sensor-history?type=${stall.powerConfig.voltage.type}&id=${stall.powerConfig.voltage.id}`).then(r => r.json()),
-                fetch(`/api/sensor-history?type=${stall.powerConfig.current.type}&id=${stall.powerConfig.current.id}`).then(r => r.json())
-            ]);
+            const response = await fetch(`/api/sensor-history?type=${stall.powerConsumption.type}&id=${stall.powerConsumption.id}`);
+            const data = await response.json();
+            const items = data.Items || [];
 
-            const avgVolts = calculateAverage(voltageRes.Items);
-            const currentItems = currentRes.Items || [];
-            if (currentItems.length === 0) continue;
+            if (items.length === 0) continue;
 
-            const avgActualAmps = calculateAverage(currentItems);
-            const sortedCurrents = currentItems.map(i => parseFloat(i.value)).sort((a, b) => b - a);
-            const topCount = Math.ceil(sortedCurrents.length * 0.2); 
-            const topCurrents = sortedCurrents.slice(0, topCount);
-            const activeStateAmps = topCurrents.reduce((a, b) => a + b, 0) / topCount;
+            // 計算實際耗電 (Smart Mode)
+            let stallTotalMWh = 0;
+            items.forEach(item => {
+                const val = parseFloat(item.value);
+                if (!isNaN(val)) stallTotalMWh += val;
+            });
+            totalSmartMWh += stallTotalMWh;
 
-            const actualPowerKw = (avgVolts * avgActualAmps) / 1000;
-            const traditionalPowerKw = (avgVolts * activeStateAmps) / 1000;
-
-            totalTraditionalKwh += (traditionalPowerKw * 24);
-            totalSmartKwh += (actualPowerKw * 24);
+            // 計算傳統耗電 (Traditional Baseline)
+            // 假設傳統是 24 小時全開 = 1440 分鐘
+            const estimatedDailyCount = 1440; 
+            totalTraditionalMWh += (TRADITIONAL_BASELINE_MWH_PER_MIN * estimatedDailyCount);
         }
 
-        if (totalTraditionalKwh < totalSmartKwh) totalTraditionalKwh = totalSmartKwh;
-        const savedKwh = totalTraditionalKwh - totalSmartKwh;
-        const savedCarbon = savedKwh * CO2_FACTOR;
-        const savingRate = totalTraditionalKwh > 0 ? (savedKwh / totalTraditionalKwh) * 100 : 0;
+        if (totalTraditionalMWh < totalSmartMWh) totalTraditionalMWh = totalSmartMWh;
 
-        document.getElementById('esg-kwh').innerText = savedKwh.toFixed(3);
-        document.getElementById('esg-carbon').innerText = savedCarbon.toFixed(3);
+        // 4. ★★★ 單位換算：改成 Wh (瓦時) ★★★
+        // mWh -> Wh (除以 1000)
+        const totalSmartWh = totalSmartMWh / 1000;
+        const totalTraditionalWh = totalTraditionalMWh / 1000;
+        
+        const savedWh = totalTraditionalWh - totalSmartWh;
+        
+         // 計算碳排 (先換算成 kWh 算 kg，再換算成 g)
+        // (Wh / 1000) * 0.495 = kgCO2e
+        // kgCO2e * 1000 = gCO2e
+        // 簡化公式：savedWh * 0.495 就是 gCO2e
+        const savedCarbonGrams = savedWh * CO2_FACTOR;
+        
+        const savingRate = totalTraditionalWh > 0 ? (savedWh / totalTraditionalWh) * 100 : 0;
+
+        document.getElementById('esg-kwh').innerText = savedWh.toFixed(1); // Wh
+        document.getElementById('esg-carbon').innerText = savedCarbonGrams.toFixed(1); // g
         document.getElementById('esg-rate').innerText = savingRate.toFixed(1);
-        renderEnergyChart(totalTraditionalKwh, totalSmartKwh);
+
+        renderEnergyChart(totalTraditionalWh, totalSmartWh);
 
     } catch (err) {
         console.error(err);
@@ -336,24 +346,21 @@ function renderEnergyChart(trad, smart) {
     const canvas = document.getElementById('energyChart');
     const ctx = canvas.getContext('2d');
     if (energyChartInstance) energyChartInstance.destroy();
-    
     if (canvas.parentNode) canvas.parentNode.style.height = '400px';
-
     let gradientTrad = ctx.createLinearGradient(0, 0, 0, 400);
     gradientTrad.addColorStop(0, '#6c757d'); gradientTrad.addColorStop(1, '#adb5bd');
     let gradientSmart = ctx.createLinearGradient(0, 0, 0, 400);
     gradientSmart.addColorStop(0, '#28a745'); gradientSmart.addColorStop(1, '#81c784');
-
     energyChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['傳統模式 (24H)', '本系統'],
-            datasets: [{ label: '耗電量 (kWh)', data: [trad, smart], backgroundColor: [gradientTrad, gradientSmart], borderRadius: 10, barThickness: 80 }]
+            labels: ['傳統模式 (24H)', '本智慧系統'],
+            datasets: [{ label: '耗電量 (Wh)', data: [trad, smart], backgroundColor: [gradientTrad, gradientSmart], borderRadius: 10, barThickness: 80 }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, title: { display: true, text: '耗電量 (kWh)' } }, x: { grid: { display: false } } }
+            scales: { y: { beginAtZero: true, title: { display: true, text: '耗電量 (Wh)' } }, x: { grid: { display: false } } }
         }
     });
 }
