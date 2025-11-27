@@ -18,7 +18,7 @@
             position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
             background-color: #28a745; color: white; border: none; padding: 10px 20px;
             border-radius: 8px; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.3s; display: flex; align-items: center; gap: 8px;
+            transition: 0.3s; display: flex; align-items: center; gap: 8px;
         }
         .esg-btn:hover { background-color: #218838; }
 
@@ -78,6 +78,16 @@
         .ai-text p { margin: 0; font-size: 0.95rem; opacity: 0.9; }
 
         .chart-container-box { position: relative; height: 400px; width: 100%; margin-top: 20px; }
+    
+        /* 清潔重置按鈕 */
+        .reset-btn {
+            background-color: #fff; border: 1px solid #ced4da; color: #495057;
+            padding: 5px 10px; font-size: 0.8rem; border-radius: 5px;
+            cursor: pointer; margin-top: 8px; transition: all 0.2s;
+        }
+        .reset-btn:hover { background-color: #e2e6ea; border-color: #adb5bd; }
+        .reset-btn:active { background-color: #dae0e5; }
+    
     </style>
 </head>
 <body>
@@ -114,12 +124,17 @@
                     <div class="progress-container">
                         <div id="clean-progress-bar" class="progress-bar"></div>
                     </div>
+                    <!-- 新增顯示累積人次 -->
                     <div style="font-size: 0.8rem; color: #666; margin-top: 3px;">
-                        髒亂度: <span id="clean-percent">0</span>%
+                        自上次清潔後: <span id="clean-count">0</span> 人
                     </div>
+                    <!-- 新增按鈕 -->
+                    <button class="reset-btn" onclick="resetCleaningStatus()">
+                        🧹 已清潔
+                    </button>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-val" id="stat-peak-hour" style="font-size: 1.2rem; line-height: 1.5rem;">分析中</div>
+                    <div class="stat-val" id="stat-peak-hour">分析中</div>
                     <div class="stat-label">今日尖峰時段</div>
                 </div>
             </div>
@@ -134,13 +149,13 @@
     <div id="energy-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('energy-modal')">&times;</span>
-            <h2 style="color: #28a745;">🌱 ESG 節能成效報告</h2>
-            <p style="text-align:center; color:#666;">比較基準：傳統廁所 24H 全開 vs. 本智慧系統</p>
+            <h2 style="color: #28a745;">🌱 ESG節能成效報告</h2>
+            <p style="text-align:center; color:#666;">比較基準：傳統廁所24H全開 vs. 本系統</p>
             
             <div class="stats-row">
                 <div class="stat-box esg">
                     <div class="stat-val" id="esg-kwh">-</div>
-                    <div class="stat-label">節省電力 (kWh)</div>
+                    <div class="stat-label">節省電力 (mWh)</div>
                 </div>
                 <div class="stat-box esg">
                     <div class="stat-val" id="esg-carbon">-</div>

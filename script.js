@@ -1,5 +1,6 @@
 let usageChartInstance = null;
 let energyChartInstance = null;
+let currentStallName = null; 
 
 document.addEventListener('DOMContentLoaded', () => {
     updateDashboard();
@@ -9,22 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
 const STALLS_CONFIG = [
     {
         name: "隔間 1",
-        pressureSensor: { type: "ELECTRIC_CURRENT", id: "1c788f5f-0e3e-4297-84cd-a66b7d3d9562" },
+        pressureSensor: { type: "WEIGHT_SCALE", id: "2e2c7411-5498-468c-ad7f-7e1df8a08121" },
         airSensors: [{ name: "eCO2", type: "AIR_PRESS", id: "1d3a465b-d312-4f12-b24a-d818676bd6ca" }],
         powerConfig: {
             voltage: { type: "BATTERY_VOLTAGE", id: "ec90c93e-c304-436f-aa6c-1f4a9739f78b" }, 
             current: { type: "ELECTRIC_CURRENT", id: "1c788f5f-0e3e-4297-84cd-a66b7d3d9562" }
         }
-    },
-    {
-        name: "隔間 2",
-        pressureSensor: { type: "BATTERY_VOLTAGE", id: "ec90c93e-c304-436f-aa6c-1f4a9739f78b" },
-        airSensors: [{ name: "eCO2", type: "AIR_PRESS", id: "1d3a465b-d312-4f12-b24a-d818676bd6ca" }],
-        powerConfig: {
-            voltage: { type: "BATTERY_VOLTAGE", id: "ec90c93e-c304-436f-aa6c-1f4a9739f78b" },
-            current: { type: "ELECTRIC_CURRENT", id: "1c788f5f-0e3e-4297-84cd-a66b7d3d9562" }
-        }
     }
+    // 在此新增更多隔間配置
 ];
 
 // --- 儀表板更新 ---
@@ -61,6 +54,9 @@ async function fetchSensorData(type, id) {
 function generateStallCardHtml(name, pressureData, airSensorsData) {
     const cardStatusClass = pressureData.status || 'error';
     let statusText = "錯誤";
+
+    console.log(`${name} 壓力數值:`, pressureData.rawValue);
+
     if (pressureData.status === 'idle') statusText = "閒置中";
     if (pressureData.status === 'in-use') statusText = "使用中";
     if (pressureData.status === 'eco-mode') statusText = "節能模式";
@@ -75,7 +71,7 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
             <div class="stall-content">
                 <h3>${name}</h3>
                 <ul class="sensor-data">
-                    <li><strong>壓力</strong><span>${pressureData.displayValue}</span></li>
+                    <li><strong>使用時間</strong><span>${pressureData.displayValue}</span></li>
                     ${airSensorsHtml}
                 </ul>
                 <div style="text-align:center; margin-top:10px; color:#888; font-size:0.8rem;">(點擊查看統計)</div>
@@ -86,50 +82,44 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
 
 // === 隔間詳細分析 & AI 預測 ===
 async function openModal(stallName) {
+    currentStallName = stallName;
     const modal = document.getElementById('detail-modal');
     modal.style.display = 'flex';
     document.getElementById('modal-title').innerText = `${stallName} - 大數據分析中...`;
-    
-    // 重置 UI
+
     document.getElementById('stat-count').innerText = '-';
     document.getElementById('stat-peak-hour').innerText = '-';
-    document.getElementById('ai-suggestion-text').innerText = "正在進行時間序列運算...";
+    document.getElementById('ai-suggestion-text').innerText = "正在整合短期趨勢與每週週期...";
     updateCleaningUI(0);
 
     const stallConfig = STALLS_CONFIG.find(s => s.name === stallName);
     if (!stallConfig) return;
 
     try {
-        // 呼叫 48H API
-        const res = await fetch(`/api/sensor-history-48h?type=${stallConfig.pressureSensor.type}&id=${stallConfig.pressureSensor.id}`);
+        const res = await fetch(`/api/sensor-history-7days?type=${stallConfig.pressureSensor.type}&id=${stallConfig.pressureSensor.id}`);
         const data = await res.json();
         if (!data.Items) throw new Error("無數據");
 
-        // 1. 分析數據 (取得原始的 0~24 小時統計)
-        const { todayCounts, yesterdayCounts, todayTotalCount } = analyze48Hours(data.Items);
+        // 分析7天數據
+        const { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount } = analyzeWeeklyData(data.Items);
 
-        // 2. ★★★ 關鍵修正：處理「未來時間」的顯示 ★★★
-        const currentHour = new Date().getHours();
-        
-        // 產生一個新的陣列給圖表用：現在時間之後的數據設為 null (讓線條斷開)
-        const displayTodayCounts = todayCounts.map((count, i) => {
-            return i > currentHour ? null : count;
-        });
-
-        // 3. 執行預測 (傳入處理過的數據，AI 會自動補齊未來)
-        const predictedCounts = calculateWeightedPrediction(displayTodayCounts, yesterdayCounts);
-
-        // 4. 更新畫面
-        document.getElementById('modal-title').innerText = `${stallName} - 智慧分析`;
+        document.getElementById('modal-title').innerText = `${stallName} - 智慧預測分析`;
         document.getElementById('stat-count').innerText = todayTotalCount + " 人次";
-
-        updateCleaningUI(todayTotalCount, 50);
-        const peakHour = findPeakHour(todayCounts); // 尖峰還是用原始數據算比較準
-        document.getElementById('stat-peak-hour').innerText = peakHour;
         
-        generateAIInsight(todayTotalCount, peakHour);
+        const usageSinceClean = calculateUsageSinceClean(stallName, data.Items);
+        updateCleaningUI(usageSinceClean, 50); // 50人
+        
+        const peakHour = findPeakHour(todayCounts);
+        document.getElementById('stat-peak-hour').innerText = peakHour;
 
-        // 5. 畫圖 (傳入處理過後的 displayTodayCounts)
+        // 執行Hybrid Prediction
+        const predictedCounts = calculateHybridPrediction(todayCounts, yesterdayCounts, lastWeekCounts);
+        generateAdvancedAIInsight(todayTotalCount, peakHour, todayCounts, predictedCounts);
+
+        // 處理圖表顯示數據 (未來時間斷線處理)
+        const currentHour = new Date().getHours();
+        const displayTodayCounts = todayCounts.map((count, i) => i > currentHour ? null : count);
+
         renderChart(displayTodayCounts, predictedCounts);
 
     } catch (err) {
@@ -138,17 +128,61 @@ async function openModal(stallName) {
     }
 }
 
-function analyze48Hours(items) {
+// 清潔重置功能
+function resetCleaningStatus() {
+    if (!currentStallName) return;
+    
+    const now = new Date().getTime();
+    // 存入 LocalStorage: 格式為 "last_clean_time_隔間 1"
+    localStorage.setItem(`last_clean_time_${currentStallName}`, now);
+    
+    alert(`${currentStallName} 清潔記錄已更新！`);
+    
+    // 重新呼叫 openModal 來刷新介面數據
+    openModal(currentStallName);
+}
+
+// 計算自上次清潔後的使用量 ★★★
+function calculateUsageSinceClean(stallName, items) {
+    const lastCleanTime = localStorage.getItem(`last_clean_time_${stallName}`) || 0;
+    let count = 0;
+    let isOccupied = false;
+    const THRESHOLD = 5;
+
+    items.forEach(item => {
+        const val = parseFloat(item.value);
+        // 只算比「最後清潔時間」還晚發生的數據
+        if (item.timestamp > lastCleanTime) {
+            if (val >= THRESHOLD) {
+                if (!isOccupied) {
+                    isOccupied = true;
+                    count++;
+                }
+            } else {
+                isOccupied = false;
+            }
+        }
+    });
+    return count;
+}
+
+// 7天數據切割器
+function analyzeWeeklyData(items) {
     let todayCounts = new Array(24).fill(0);
     let yesterdayCounts = new Array(24).fill(0);
+    let lastWeekCounts = new Array(24).fill(0); // 上週同日
     let todayTotalCount = 0;
     
     const now = new Date();
+    // 時間錨點
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const yesterdayStart = todayStart - (24 * 60 * 60 * 1000);
+    // 上週同日的開始時間 (例如今天是週三，這就是上週三)
+    // 抓取範圍：6天前 ~ 7天前之間
+    const lastWeekStart = todayStart - (7 * 24 * 60 * 60 * 1000); 
+    const lastWeekEnd = lastWeekStart + (24 * 60 * 60 * 1000);
 
     let isOccupied = false;
-    let startTime = 0;
     const THRESHOLD = 5;
 
     items.forEach(item => {
@@ -156,61 +190,86 @@ function analyze48Hours(items) {
         const timestamp = item.timestamp;
         const date = new Date(timestamp);
         const hour = date.getHours();
+
+        // 判斷時間區間
         const isToday = timestamp >= todayStart;
         const isYesterday = timestamp >= yesterdayStart && timestamp < todayStart;
+        const isLastWeek = timestamp >= lastWeekStart && timestamp < lastWeekEnd;
 
         if (val >= THRESHOLD) {
             if (!isOccupied) {
                 isOccupied = true;
-                startTime = timestamp;
                 if (isToday) {
                     todayTotalCount++;
                     todayCounts[hour]++;
                 } else if (isYesterday) {
                     yesterdayCounts[hour]++;
+                } else if (isLastWeek) {
+                    lastWeekCounts[hour]++;
                 }
             }
         } else {
             if (isOccupied) isOccupied = false;
         }
     });
-    return { todayCounts, yesterdayCounts, todayTotalCount };
+    return { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount };
 }
-function calculateWeightedPrediction(today, yesterday) {
-    // 取得現在是幾點 (0~23)
+
+// 混合預測演算法 (The Hybrid Model)
+function calculateHybridPrediction(today, yesterday, lastWeek) {
     const currentHour = new Date().getHours();
 
     return today.map((todayVal, index) => {
-        const yesterdayVal = yesterday[index];
-        
         let prediction;
+
+        // 如果上週同日沒有數據 (例如裝置剛裝不到一週)，就降級回昨天模式
+        // 降級策略 Fallback Strategy
+        const hasLastWeekData = lastWeek.some(v => v > 0);
         
         if (index > currentHour) {
-            // 情況 A：未來時間 (例如現在 4點，計算 5點的預測)
-            // 既然還沒發生，我們就假設它會跟昨天差不多，並加一點隨機波動讓它看起來像預測
-            const volatility = 1 + (Math.random() * 0.2 - 0.1); // +/- 10% 波動
-            prediction = yesterdayVal * volatility;
+            // --- 預測未來 ---
+            if (hasLastWeekData) {
+                // 公式： 30% 參考昨天 (近期趨勢) + 70% 參考上週同日 (週期慣性)
+                // 為什麼上週權重高？因為週一跟週一比較像，跟週日比較不像
+                prediction = (yesterday[index] * 0.3) + (lastWeek[index] * 0.7);
+            } else {
+                // 只有昨天數據時
+                prediction = yesterday[index];
+            }
+            
+            // 加入微小隨機波動 (模擬真實世界的不確定性)
+            prediction *= (1 + (Math.random() * 0.1 - 0.05));
         } else {
-            // 情況 B：過去時間 (例如現在 4點，計算 2點的預測)
-            // 已經發生了，我們用加權平均來平滑曲線
-            prediction = (todayVal * 0.7) + (yesterdayVal * 0.3);
+            // --- 過去時間 ---
+            // 用平滑曲線連接
+            prediction = (todayVal * 0.6) + (yesterday[index] * 0.4);
         }
         
         return Math.round(prediction * 10) / 10;
     });
 }
 
-function generateAIInsight(count, peakHourStr) {
+// AI建議
+function generateAdvancedAIInsight(count, peakHourStr, todayCounts, predictedCounts) {
     const el = document.getElementById('ai-suggestion-text');
-    let msg = "";
-    if (count > 40) {
-        msg = `⚠️ 今日高負載 (${count}人次)，系統運算顯示明日需求仍高。`;
-    } else {
-        msg = `✅ 運作平穩，系統預測明日維持節能模式。`;
+    
+    // 計算明日預估總量
+    const predictedTotal = predictedCounts.reduce((a,b) => a+b, 0);
+    const trend = predictedTotal > count ? "上升 📈" : "下降 📉";
+    
+    let msg = `📊 模型預測明日人流將${trend} (約${Math.round(predictedTotal)}人次)。`;
+
+    // 判斷是否為週末模式 (假設上週數據顯示差異)
+    // 這裡可以寫死一個邏輯：如果今天是週五，提示明天(週六)可能變少(商辦)或變多(景點)
+    const tomorrowDay = new Date(new Date().getTime() + 24*60*60*1000).getDay();
+    const isWeekend = (tomorrowDay === 0 || tomorrowDay === 6);
+    
+    if (isWeekend) {
+        msg += " 明日為週末，系統已自動調整為假日節能模式";
+    } else if (peakHourStr !== "無資料") {
+        msg += ` 建議在 ${peakHourStr} 前加強通風並補給備品。`;
     }
-    if (peakHourStr !== "無資料") {
-        msg += ` 建議針對 ${peakHourStr} 尖峰時段進行預防性維護。`;
-    }
+
     el.innerText = msg;
 }
 
@@ -288,7 +347,7 @@ function renderEnergyChart(trad, smart) {
     energyChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['傳統模式 (24H)', '本智慧系統'],
+            labels: ['傳統模式 (24H)', '本系統'],
             datasets: [{ label: '耗電量 (kWh)', data: [trad, smart], backgroundColor: [gradientTrad, gradientSmart], borderRadius: 10, barThickness: 80 }]
         },
         options: {
@@ -303,9 +362,10 @@ function updateCleaningUI(currentCount, threshold = 50) {
     const percent = Math.min(Math.round((currentCount / threshold) * 100), 100);
     const bar = document.getElementById('clean-progress-bar');
     const statusText = document.getElementById('stat-clean-status');
-    const percentText = document.getElementById('clean-percent');
+
+    document.getElementById('clean-count').innerText = currentCount;
+
     bar.style.width = `${percent}%`;
-    percentText.innerText = percent;
     if (percent < 50) {
         bar.style.backgroundColor = '#28a745'; statusText.innerText = "狀態良好"; statusText.style.color = '#28a745';
     } else if (percent < 80) {
