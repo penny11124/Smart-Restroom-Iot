@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const { URLSearchParams } = require('url');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 const bodyParser = require('body-parser')
 
 const app = express();
@@ -19,6 +20,8 @@ const SENSOR_DATA_API_URL = `${API_BASE_URL}/sensors_in_timeinterval`;
 const USER_ACCOUNT = '2025-competition-team10';
 const USER_PASSWORD = '94964689';
 
+const DATA_FILE = path.join(__dirname, 'clean_status.json');
+
 // --- 中介軟體 (Middleware) ---
 app.use(cors());
 app.use(express.static(__dirname));
@@ -26,6 +29,33 @@ app.use(express.json());
 
 // 伺服器端記憶體 (儲存清潔時間)
 let stallCleanTimes = {}; 
+
+// 讀取檔案 (Server 啟動時執行)
+function loadData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const rawData = fs.readFileSync(DATA_FILE);
+            stallCleanTimes = JSON.parse(rawData);
+            console.log('已成功讀取歷史清潔紀錄:', stallCleanTimes);
+        } else {
+            console.log('找不到歷史紀錄，將建立新檔案。');
+        }
+    } catch (error) {
+        console.error('讀取檔案失敗:', error);
+        stallCleanTimes = {}; // 出錯就重置
+    }
+}
+
+function saveData() {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(stallCleanTimes, null, 2));
+        console.log('清潔紀錄已存檔。');
+    } catch (error) {
+        console.error('寫入檔案失敗:', error);
+    }
+}
+
+loadData();
 
 // --- 輔助函式：取得 Token ---
 async function getAuthToken() {
@@ -208,6 +238,8 @@ app.post('/api/clean-reset', (req, res) => {
     
     const now = Date.now();
     stallCleanTimes[stallName] = now; // 更新伺服器變數
+
+    saveData();
     
     console.log(`[Server] ${stallName} 清潔狀態已重置於 ${new Date(now).toLocaleString()}`);
     res.json({ success: true, lastCleanTime: now });

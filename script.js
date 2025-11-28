@@ -145,7 +145,7 @@ async function resetCleaningStatus() {
         
         if (res.ok) {
             alert(`${currentStallName} 清潔記錄已同步更新至雲端！`);
-            // 重新整理 UI，這樣所有裝置都會看到更新後的狀態
+            // 重新整理UI，這樣所有裝置都會看到更新後的狀態
             openModal(currentStallName);
         } else {
             alert("更新失敗，請檢查網路");
