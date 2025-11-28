@@ -61,6 +61,25 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
     if (pressureData.status === 'in-use') statusText = "使用中";
     if (pressureData.status === 'eco-mode') statusText = "節能模式";
 
+    let durationMin = 0;
+    if (pressureData.displayValue && pressureData.displayValue.includes("分鐘")) {
+        durationMin = parseInt(pressureData.displayValue);
+    }
+
+    // 判斷是否超過 20 分鐘
+    const LONG_USAGE_THRESHOLD = 20;
+    let warningHtml = "";
+    let additionalCardClass = "";
+
+    if (durationMin >= LONG_USAGE_THRESHOLD) {
+        warningHtml = `
+            <div class="long-usage-alert">
+                ⚠️已使用超過 ${durationMin} 分鐘，請查看情況！
+            </div>
+        `;
+        additionalCardClass = "warning";
+    }
+
     const airSensorsHtml = airSensorsData.map(sensor => `
         <li><strong>${sensor.name}</strong><span class="${sensor.status || ''}">${sensor.displayValue}</span></li>
     `).join('');
@@ -75,6 +94,7 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
                     ${airSensorsHtml}
                 </ul>
                 <div style="text-align:center; margin-top:10px; color:#888; font-size:0.8rem;">(點擊查看統計)</div>
+                ${warningHtml}
             </div>
         </div>
     `;
