@@ -150,7 +150,7 @@ function calculateUsageSinceClean(stallName, items) {
 
     items.forEach(item => {
         const val = parseFloat(item.value);
-        // 只算比「最後清潔時間」還晚發生的數據
+        // 只算比最後清潔時間還晚發生的數據
         if (item.timestamp > lastCleanTime) {
             if (val >= THRESHOLD) {
                 if (!isOccupied) {
@@ -292,7 +292,7 @@ async function openEnergyReport() {
 
             if (items.length === 0) continue;
 
-            // 計算實際耗電 (Smart Mode)
+            // 計算實際耗電
             let stallTotalMWh = 0;
             items.forEach(item => {
                 const val = parseFloat(item.value);
@@ -308,14 +308,13 @@ async function openEnergyReport() {
 
         if (totalTraditionalMWh < totalSmartMWh) totalTraditionalMWh = totalSmartMWh;
 
-        // 4. ★★★ 單位換算：改成 Wh (瓦時) ★★★
         // mWh -> Wh (除以 1000)
         const totalSmartWh = totalSmartMWh / 1000;
         const totalTraditionalWh = totalTraditionalMWh / 1000;
         
         const savedWh = totalTraditionalWh - totalSmartWh;
         
-         // 計算碳排 (先換算成 kWh 算 kg，再換算成 g)
+         // 計算碳排 (先換算成kWh算 kg，再換算成g)
         // (Wh / 1000) * 0.495 = kgCO2e
         // kgCO2e * 1000 = gCO2e
         // 簡化公式：savedWh * 0.495 就是 gCO2e
