@@ -128,7 +128,7 @@ app.get('/api/sensor-data', async (req, res) => {
                 for (let i = items.length - 2; i >= 0; i--) {
                     const val = parseFloat(items[i].value);
                     if (val < THRESHOLD) {
-                        break; // 找到斷點了
+                        break;
                     }
                     startTime = items[i].timestamp; // 更新開始時間
                 }
