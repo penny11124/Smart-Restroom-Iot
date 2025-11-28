@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDashboard, 5000); 
 });
 
+// 傳統設備基準 (mWh/min)
 const TRADITIONAL_BASELINE_MWH_PER_MIN = 63.6; //mWh
 
 const STALLS_CONFIG = [
@@ -95,17 +96,21 @@ async function openModal(stallName) {
     if (!stallConfig) return;
 
     try {
-        const res = await fetch(`/api/sensor-history-7days?type=${stallConfig.pressureSensor.type}&id=${stallConfig.pressureSensor.id}`);
-        const data = await res.json();
-        if (!data.Items) throw new Error("無數據");
+        const [historyRes, cleanRes] = await Promise.all([
+            fetch(`/api/sensor-history-7days?type=${stallConfig.pressureSensor.type}&id=${stallConfig.pressureSensor.id}`).then(r => r.json()),
+            fetch(`/api/clean-status?stallName=${encodeURIComponent(stallName)}`).then(r => r.json())
+        ]);
+        if (!historyRes.Items) throw new Error("無數據");
+
+        const lastCleanTime = cleanRes.lastCleanTime || 0;
 
         // 分析7天數據
-        const { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount } = analyzeWeeklyData(data.Items);
+        const { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount, items } = analyzeWeeklyData(historyRes.Items);
 
         document.getElementById('modal-title').innerText = `${stallName} - 智慧預測分析`;
         document.getElementById('stat-count').innerText = todayTotalCount + " 人次";
         
-        const usageSinceClean = calculateUsageSinceClean(stallName, data.Items);
+        const usageSinceClean = calculateUsageSinceClean(items, lastCleanTime);
         updateCleaningUI(usageSinceClean, 50); // 50人
         
         const peakHour = findPeakHour(todayCounts);
@@ -128,38 +133,41 @@ async function openModal(stallName) {
 }
 
 // 清潔重置功能
-function resetCleaningStatus() {
+async function resetCleaningStatus() {
     if (!currentStallName) return;
     
-    const now = new Date().getTime();
-    // 存入 LocalStorage: 格式為 "last_clean_time_隔間 1"
-    localStorage.setItem(`last_clean_time_${currentStallName}`, now);
-    
-    alert(`${currentStallName} 清潔記錄已更新！`);
-    
-    // 重新呼叫 openModal 來刷新介面數據
-    openModal(currentStallName);
+    try {
+        const res = await fetch('/api/clean-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stallName: currentStallName })
+        });
+        
+        if (res.ok) {
+            alert(`${currentStallName} 清潔記錄已同步更新至雲端！`);
+            // 重新整理 UI，這樣所有裝置都會看到更新後的狀態
+            openModal(currentStallName);
+        } else {
+            alert("更新失敗，請檢查網路");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("連線錯誤");
+    };
 }
 
 // 計算自上次清潔後的使用量
-function calculateUsageSinceClean(stallName, items) {
-    const lastCleanTime = localStorage.getItem(`last_clean_time_${stallName}`) || 0;
-    let count = 0;
-    let isOccupied = false;
+function calculateUsageSinceClean(items, lastCleanTime) {
+    let count = 0; 
+    let isOccupied = false; 
     const THRESHOLD = 5;
-
+    
     items.forEach(item => {
         const val = parseFloat(item.value);
-        // 只算比最後清潔時間還晚發生的數據
-        if (item.timestamp > lastCleanTime) {
-            if (val >= THRESHOLD) {
-                if (!isOccupied) {
-                    isOccupied = true;
-                    count++;
-                }
-            } else {
-                isOccupied = false;
-            }
+        if (item.timestamp > lastCleanTime) { // 使用 Server 傳來的時間比對
+            if (val >= THRESHOLD) { 
+                if (!isOccupied) { isOccupied = true; count++; } 
+            } else { isOccupied = false; }
         }
     });
     return count;
@@ -211,7 +219,7 @@ function analyzeWeeklyData(items) {
             if (isOccupied) isOccupied = false;
         }
     });
-    return { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount };
+    return { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount, items};
 }
 
 // 混合預測演算法 (The Hybrid Model)

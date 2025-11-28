@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const { URLSearchParams } = require('url');
 const path = require('path');
 const cors = require('cors');
+const bodyParser = require('body-parser')
 
 const app = express();
 const PORT = 3000;
@@ -21,6 +22,10 @@ const USER_PASSWORD = '94964689';
 // --- 中介軟體 (Middleware) ---
 app.use(cors());
 app.use(express.static(__dirname));
+app.use(express.json());
+
+// 伺服器端記憶體 (儲存清潔時間)
+let stallCleanTimes = {}; 
 
 // --- 輔助函式：取得 Token ---
 async function getAuthToken() {
@@ -188,12 +193,31 @@ app.get('/api/sensor-history-7days', async (req, res) => {
     }
 });
 
+// API 4: 取得清潔時間
+app.get('/api/clean-status',(req, res) => {
+    const { stallName } = req.query;
+    // 如果伺服器沒紀錄，回傳 0
+    const time = stallCleanTimes[stallName] || 0;
+    res.json({ lastCleanTime: time });
+});
+
+// API 5: 重置清潔時間
+app.post('/api/clean-reset', (req, res) => {
+    const { stallName } = req.body;
+    if (!stallName) return res.status(400).json({ message: 'Missing stallName' });
+    
+    const now = Date.now();
+    stallCleanTimes[stallName] = now; // 更新伺服器變數
+    
+    console.log(`[Server] ${stallName} 清潔狀態已重置於 ${new Date(now).toLocaleString()}`);
+    res.json({ success: true, lastCleanTime: now });
+});
+
 // --- 啟動伺服器 ---
 app.listen(PORT, () => {
-    console.log(`後端伺服器已啟動！`);
-    console.log(`你的Web App現在跑在 http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
     console.log('---');
-    console.log(`提供 API 網址:`);
+    console.log(`API網址:`);
     console.log(`1. 感測器清單: http://localhost:${PORT}/api/sensorGroup`);
     console.log(`2. 感測器資料: http://localhost:${PORT}/api/sensor-data?type=...&id=...`);
 });
