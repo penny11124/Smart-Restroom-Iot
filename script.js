@@ -67,7 +67,7 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
     }
 
     // 判斷是否超過 20 分鐘
-    const LONG_USAGE_THRESHOLD = 20;
+    const LONG_USAGE_THRESHOLD = 2;
     let warningHtml = "";
     let additionalCardClass = "";
 
