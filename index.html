@@ -8,19 +8,64 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 20px; background-color: #f4f7f6; }
         
-        /* 標題與按鈕 */
+        /* --- 標題區塊 (預設電腦版樣式) --- */
         .header-container {
-            position: relative; display: flex; justify-content: center; align-items: center;
-            width: 100%; max-width: 1200px; margin: 0 auto 20px auto; padding: 10px 20px; box-sizing: border-box;
+            position: relative; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            width: 100%; 
+            max-width: 1200px; 
+            margin: 0 auto 20px auto; 
+            padding: 10px 20px; 
+            box-sizing: border-box;
+            min-height: 60px; 
         }
         h2 { margin: 0; color: #333; font-size: 1.8rem; }
+        /* 電腦版按鈕樣式 (絕對定位) */
         .esg-btn {
-            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-            background-color: #28a745; color: white; border: none; padding: 10px 20px;
-            border-radius: 8px; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: 0.3s; display: flex; align-items: center; gap: 8px;
+            position: absolute; 
+            right: 20px; 
+            top: 50%; 
+            transform: translateY(-50%);
+            
+            background-color: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            transition: 0.3s; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            white-space: nowrap; /* 防止文字換行 */
         }
         .esg-btn:hover { background-color: #218838; }
+
+        /* 手機版 RWD 修正 (當螢幕寬度小於 768px 時觸發) */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column; /* 改為垂直排列 */
+                gap: 15px; /* 標題與按鈕的間距 */
+                padding: 10px 5px;
+            }
+
+            h2 {
+                font-size: 1.5rem; /* 手機上字稍微小一點 */
+                width: 100%;
+            }
+
+            .esg-btn {
+                position: static; /* 取消絕對定位，讓它回到正常的排版流 */
+                transform: none;  /* 取消垂直置中偏移 */
+                width: 100%;      /* 按鈕變寬，方便手指點擊 */
+                justify-content: center; /* 按鈕文字置中 */
+                margin-top: 5px;
+            }
+        }
 
         /* 卡片 */
         #dashboard-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; }
