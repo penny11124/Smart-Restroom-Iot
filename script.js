@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDashboard, 5000); 
 });
 
-const TRADITIONAL_BASELINE_MWH_PER_MIN = 1200;
+const TRADITIONAL_BASELINE_MWH_PER_MIN = 63.6; //mWh
 
 const STALLS_CONFIG = [
     {
@@ -308,7 +308,7 @@ async function openEnergyReport() {
 
         if (totalTraditionalMWh < totalSmartMWh) totalTraditionalMWh = totalSmartMWh;
 
-        // 4. ★★★ 單位換算：改成 Wh (瓦時) ★★★
+        // 單位換算：改成 Wh (瓦時)
         // mWh -> Wh (除以 1000)
         const totalSmartWh = totalSmartMWh / 1000;
         const totalTraditionalWh = totalTraditionalMWh / 1000;
