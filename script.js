@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateDashboard, 5000); 
 });
 
-const TRADITIONAL_BASELINE_MWH_PER_MIN = 1200;
+const TRADITIONAL_BASELINE_MWH_PER_MIN = 63.6; //mWh
 
 const STALLS_CONFIG = [
     {
