@@ -210,7 +210,7 @@ function analyzeWeeklyData(items) {
     const lastWeekEnd = lastWeekStart + (24 * 60 * 60 * 1000);
 
     let isOccupied = false;
-    const THRESHOLD = 5;
+    const THRESHOLD = 1500;
 
     items.forEach(item => {
         const val = parseFloat(item.value);
@@ -450,7 +450,7 @@ function renderChart(hourlyData, predictedData) {
             interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: true } },
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#888' }, grid: { borderDash: [5, 5] } },
+                y: { beginAtZero: true, suggestedMax: 10, ticks: { stepSize: 1, color: '#888' }, grid: { borderDash: [5, 5] } },
                 x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 13, color: '#888' } }
             }
         }
