@@ -242,9 +242,35 @@ function analyzeWeeklyData(items) {
     return { todayCounts, yesterdayCounts, lastWeekCounts, todayTotalCount, items};
 }
 
-// 混合預測演算法 (The Hybrid Model)
+// 混合預測演算法
 function calculateHybridPrediction(today, yesterday, lastWeek) {
     const currentHour = new Date().getHours();
+
+    // 計算動態趨勢因子 (Trend Factor)
+    let trendFactor = 1.0;
+    
+    if (currentHour > 0) { // 至少要有一小時的數據才能算趨勢
+        let todaySum = 0;
+        let baselineSum = 0;
+
+        for (let i = 0; i < currentHour; i++) {
+            todaySum += today[i];
+            // 基準同樣採用 3:7 比例
+            let baseVal = (yesterday[i] * 0.3) + (lastWeek[i] * 0.7);
+            if(Number.isNaN(baseVal)) baseVal = yesterday[i] || 0; 
+            baselineSum += baseVal;
+        }
+
+        // 避免分母為 0 或數據過小造成誤差放大，設定閾值
+        if (baselineSum > 10) {
+            trendFactor = todaySum / baselineSum;
+            
+            // 限制修正幅度 (例如：最多修正 ±50%，避免極端值)
+            trendFactor = Math.max(0.5, Math.min(trendFactor, 1.5));
+            
+            console.log(`[AI] 偵測到今日流量趨勢因子: ${trendFactor.toFixed(2)}`);
+        }
+    }
 
     return today.map((todayVal, index) => {
         let prediction;
@@ -252,26 +278,30 @@ function calculateHybridPrediction(today, yesterday, lastWeek) {
         // 如果上週同日沒有數據 (例如裝置剛裝不到一週)，就降級回昨天模式
         // 降級策略 Fallback Strategy
         const hasLastWeekData = lastWeek.some(v => v > 0);
-        
+
         if (index > currentHour) {
             // --- 預測未來 ---
+            let rawPrediction;
             if (hasLastWeekData) {
                 // 公式： 30% 參考昨天 (近期趨勢) + 70% 參考上週同日 (週期慣性)
                 // 為什麼上週權重高？因為週一跟週一比較像，跟週日比較不像
-                prediction = (yesterday[index] * 0.3) + (lastWeek[index] * 0.7);
+                rawPrediction = (yesterday[index] * 0.3) + (lastWeek[index] * 0.7);
             } else {
                 // 只有昨天數據時
-                prediction = yesterday[index];
+                rawPrediction = yesterday[index];
             }
-            
+
+            // 我們讓趨勢因子隨著時間衰減 (因為晚上的行為不一定跟早上完全一樣)
+            // 這裡簡單直接乘上去
+            prediction = rawPrediction * trendFactor;
+
             // 加入微小隨機波動 (模擬真實世界的不確定性)
             prediction *= (1 + (Math.random() * 0.1 - 0.05));
+
         } else {
-            // --- 過去時間 ---
-            // 用平滑曲線連接
             prediction = (todayVal * 0.6) + (yesterday[index] * 0.4);
         }
-        
+
         return Math.round(prediction * 10) / 10;
     });
 }
