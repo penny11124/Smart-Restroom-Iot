@@ -112,7 +112,7 @@ app.get('/api/sensor-data', async (req, res) => {
         if (isPressureSensor) {
             // === 壓力/使用狀態邏輯 ===
             const THRESHOLD = 1500 //閾值 (大於此值視為有人)
-            const ECO_MODE_LIMIT = 5; // 超過5分鐘視為節能模式/久佔
+            const ECO_MODE_LIMIT = 1; // 超過1分鐘視為節能模式/久佔
 
             if (latestValue < THRESHOLD) {
                 // 沒人

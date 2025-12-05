@@ -66,8 +66,8 @@ function generateStallCardHtml(name, pressureData, airSensorsData) {
         durationMin = parseInt(pressureData.displayValue);
     }
 
-    // 判斷是否超過10分鐘
-    const LONG_USAGE_THRESHOLD = 10;
+    // 判斷是否超過2分鐘
+    const LONG_USAGE_THRESHOLD = 2;
     let warningHtml = "";
     let additionalCardClass = "";
 
@@ -180,7 +180,7 @@ async function resetCleaningStatus() {
 function calculateUsageSinceClean(items, lastCleanTime) {
     let count = 0; 
     let isOccupied = false; 
-    const THRESHOLD = 5;
+    const THRESHOLD = 1500;
     
     items.forEach(item => {
         const val = parseFloat(item.value);
